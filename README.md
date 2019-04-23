@@ -18,6 +18,10 @@ Clone this repository to `~/.emacs.d/site-lisp/with-emacs`. Add the following to
 (with-emacs "/path/to/version/emacs"
   (do-something)
   ...)
+
+(with-default-emacs ;; or `(with-emacs nil'
+  (do-something)
+  ...)
 ```
 
 ## Examples

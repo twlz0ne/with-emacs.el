@@ -46,7 +46,7 @@ PATH is the abs path for emacs."
   `(let* ((process-connection-type nil)
           (eoe-indicator "with-emacs-eoe")
           (comint-prompt-regexp "Lisp expression: ")
-          (cmdlist '(,path
+          (cmdlist '(,(or path "emacs")
                      "--batch"
                      "--eval"
                      ,(format "%s" '(while t (prin1 (eval (read)))))))
@@ -129,6 +129,12 @@ PATH is the abs path for emacs."
                (match-string 1 ret)
              ret)
            )))))
+
+(defmacro with-default-emacs (&rest body)
+  "An alias for `(with-emacs nil ...)'."
+  (declare (indent defun) (debug t))
+  `(with-emacs nil
+     ,@body))
 
 (provide 'with-emacs)
 
