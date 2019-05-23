@@ -23,30 +23,32 @@
 (when noninteractive
   (transient-mark-mode))
 
+(setq with-emacs-default-path (getenv "EMACS"))
+
 (ert-deftest with-emacs-test-return-value ()
   (should (equal "\"foo\""
-                 (with-emacs "emacs"
+                 (with-default-emacs
                    (message "qux")
                    "bar"
                    "foo")))
   (should (equal "foo"
-                 (with-emacs "emacs"
+                 (with-default-emacs
                    (message "qux")
                    "bar"
                    'foo)))
   (should (equal "nil"
-                 (with-emacs "emacs"
+                 (with-default-emacs
                    "foo"
                    nil)))
   (should (equal "t"
-                 (with-emacs "emacs"
+                 (with-default-emacs
                    "foo"
                    t))))
 
 (ert-deftest with-emacs-test-print-message ()
   (should (equal "\"AFE1CEFE-622C-4CED-B50E-9C95F2AF5F50\""
                  (progn
-                   (with-emacs "emacs"
+                   (with-default-emacs
                      (message "AFE1CEFE-622C-4CED-B50E-9C95F2AF5F50"))
                    (with-current-buffer "*Messages*"
                      (let ((s (buffer-substring-no-properties (point-min) (point-max))))
@@ -61,7 +63,7 @@
 (ert-deftest with-emacs-test-scope-isolate ()
  (should
   (equal "\"Hi, Tom\""
-         (with-emacs "emacs"
+         (with-default-emacs
            (defun greet (name)
              (message "Hi, %s" name))
            (greet "Tom"))))

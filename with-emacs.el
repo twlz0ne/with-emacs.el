@@ -40,13 +40,19 @@
 
 ;;; Code:
 
+(defcustom with-emacs-default-path "emacs"
+  "Default path of Emacs."
+  :type 'string
+  :group 'with-emacs)
+
 (defmacro with-emacs (path &rest body)
   "Start a emacs in a subprocess, and execute BODY there.
 PATH is the abs path for emacs."
+  (declare (indent defun) (debug t))
   `(let* ((process-connection-type nil)
           (eoe-indicator "with-emacs-eoe")
           (comint-prompt-regexp "Lisp expression: ")
-          (cmdlist '(,(or path "emacs")
+          (cmdlist '(,(or path with-emacs-default-path)
                      "--batch"
                      "--eval"
                      ,(format "%s" '(while t (prin1 (eval (read)))))))
