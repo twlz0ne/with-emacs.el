@@ -45,6 +45,21 @@
   :type 'string
   :group 'with-emacs)
 
+(defcustom with-emacs-output-regexp
+  (rx string-start
+      (0+ "\n")
+      ;; Text that need to be redirected to the `*Messages*' buffer
+      (group (0+ anything))
+      "\n"
+      ;; Result of a expression
+      (or (group (0+ (not (any "\n")))) ;; match a symbol
+          ;; match a quoted string, e.g. "foo\"bar\""
+          (group "\"" (group (0+ (or (1+ (not (any "\"" "\\"))) (seq "\\" anything)))) "\""))
+      string-end)
+  "Regexp for extracting message or result from output."
+  :type 'string
+  :group 'with-emacs)
+
 (defmacro with-emacs (path &rest body)
   "Start a emacs in a subprocess, and execute BODY there.
 PATH is the abs path for emacs."
@@ -123,16 +138,16 @@ PATH is the abs path for emacs."
          (signal 'error (list error-msg))
        (when output
          (let* ((strs (split-string output comint-prompt-regexp))
-                (ret (car (cddr (reverse strs))))
-                (rx "\n\\(\\\".*\\\"\\|nil\\)\\'"))
+                (ret (car (cddr (reverse strs)))))
            ;; Redirect message to `*Messages*'
            (mapc (lambda (s)
-                   (when (string-match rx s)
+                   ;; (message "s: [%S]" s) ;; debug
+                   (when (string-match with-emacs-output-regexp s)
                      (message (match-string 1 s))))
                  strs)
            ;; Return the result of the last expression as a string
-           (if (string-match rx ret)
-               (match-string 1 ret)
+           (if (string-match with-emacs-output-regexp ret)
+               (match-string 2 ret)
              ret)
            )))))
 

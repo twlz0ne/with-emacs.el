@@ -45,17 +45,57 @@
                    "foo"
                    t))))
 
-(ert-deftest with-emacs-test-print-message ()
-  (should (equal "\"AFE1CEFE-622C-4CED-B50E-9C95F2AF5F50\""
+(ert-deftest with-emacs-test-print-message-1 ()
+  (should (equal "AFE1CEFE-622C-4CED-B50E-9C95F2AF5F50"
                  (progn
                    (with-default-emacs
                      (message "AFE1CEFE-622C-4CED-B50E-9C95F2AF5F50"))
                    (with-current-buffer "*Messages*"
                      (let ((s (buffer-substring-no-properties (point-min) (point-max))))
-                       (message "[%s]" s)
-                       (when (string-match "\s*\\(\"AFE1CEFE-622C-4CED-B50E-9C95F2AF5F50\"\\)\s*" s)
-                         (match-string 1 s)))
-                     )))))
+                       (when (string-match "\s*\\(AFE1CEFE-622C-4CED-B50E-9C95F2AF5F50\\)\s*" s)
+                         (match-string 1 s))))))))
+
+(ert-deftest with-emacs-test-print-message-2 ()
+  (should (equal "AFE1CEFE-622C-4CED-B50E-9C95F2AF5F50"
+                 (progn
+                   (with-default-emacs
+                     (defun foo ()
+                       (message "AFE1CEFE-622C-4CED-B50E-9C95F2AF5F50")
+                       "return-value")
+                     (foo))
+                   (with-current-buffer "*Messages*"
+                     (let ((s (buffer-substring-no-properties (point-min) (point-max))))
+                       (message "==> [%S]" s)
+                       (when (string-match "\s*\\(AFE1CEFE-622C-4CED-B50E-9C95F2AF5F50\\)\s*" s)
+                         (match-string 1 s))))))))
+
+(ert-deftest with-emacs-test-print-message-3 ()
+  (should (equal "AFE1CEFE-622C-4CED-B50E-9C95F2AF5F50"
+                 (progn
+                   (with-default-emacs
+                     (defun foo ()
+                       (message "AFE1CEFE-622C-4CED-B50E-9C95F2AF5F50")
+                       nil)
+                     (foo))
+                   (with-current-buffer "*Messages*"
+                     (let ((s (buffer-substring-no-properties (point-min) (point-max))))
+                       (message "==> [%S]" s)
+                       (when (string-match "\s*\\(AFE1CEFE-622C-4CED-B50E-9C95F2AF5F50\\)\s*" s)
+                         (match-string 1 s))))))))
+
+(ert-deftest with-emacs-test-print-message-4 ()
+  (should (equal "AFE1CEFE-622C-4CED-B50E-9C95F2AF5F50"
+                 (progn
+                   (with-default-emacs
+                     (defun foo ()
+                       (message "AFE1CEFE-622C-4CED-B50E-9C95F2AF5F50")
+                       t)
+                     (foo))
+                   (with-current-buffer "*Messages*"
+                     (let ((s (buffer-substring-no-properties (point-min) (point-max))))
+                       (message "==> [%S]" s)
+                       (when (string-match "\s*\\(AFE1CEFE-622C-4CED-B50E-9C95F2AF5F50\\)\s*" s)
+                         (match-string 1 s))))))))
 
 (defun greet (name)
   (message "Hello, %s" name))
