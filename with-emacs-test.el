@@ -23,8 +23,6 @@
 (when noninteractive
   (transient-mark-mode))
 
-(setq with-emacs-default-path (getenv "EMACS"))
-
 (ert-deftest with-emacs-test-return-string ()
   (should (equal "foo"
                  (with-default-emacs
