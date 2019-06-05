@@ -4,7 +4,7 @@
 
 ;; Author: Gong Qijian <gongqijian@gmail.com>
 ;; Created: 2019/04/20
-;; Version: 0.1.0
+;; Version: 0.2.0
 ;; Package-Requires: ((emacs "24.4"))
 ;; URL: https://github.com/twlz0ne/with-emacs.el
 ;; Keywords: tools
@@ -36,7 +36,16 @@
 
 ;;; Change Log:
 
-;;  0.1.0  2019/04/20  Initial version.
+;;
+;; 0.2.0  2019/06/05
+;;
+;;   Add function -extract-return-value to replace the regexp to get more
+;;   accurate result and remove the outer double quotes from return value.
+;;
+;; 0.1.0  2019/04/20
+;;
+;;   Initial version.
+;;
 
 ;;; Code:
 
@@ -59,6 +68,15 @@
   "Regexp for extracting message or result from output."
   :type 'string
   :group 'with-emacs)
+
+
+(defun with-emacs--extract-return-value (s)
+  "Extract return value from string S."
+  (with-temp-buffer
+    (insert s)
+    (emacs-lisp-mode)
+    (goto-char (point-max))
+    (sexp-at-point)))
 
 (defmacro with-emacs (path &rest body)
   "Start a emacs in a subprocess, and execute BODY there.
@@ -146,10 +164,7 @@ PATH is the abs path for emacs."
                      (message (match-string 1 s))))
                  strs)
            ;; Return the result of the last expression as a string
-           (if (string-match with-emacs-output-regexp ret)
-               (match-string 2 ret)
-             ret)
-           )))))
+           (with-emacs--extract-return-value ret))))))
 
 (defmacro with-default-emacs (&rest body)
   "An alias for `(with-emacs nil ...)'."

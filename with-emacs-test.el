@@ -26,21 +26,21 @@
 (setq with-emacs-default-path (getenv "EMACS"))
 
 (ert-deftest with-emacs-test-return-value ()
-  (should (equal "\"foo\""
-                 (with-default-emacs
-                   (message "qux")
-                   "bar"
-                   "foo")))
   (should (equal "foo"
                  (with-default-emacs
                    (message "qux")
                    "bar"
+                   "foo")))
+  (should (equal 'foo
+                 (with-default-emacs
+                   (message "qux")
+                   "bar"
                    'foo)))
-  (should (equal "nil"
+  (should (equal nil
                  (with-default-emacs
                    "foo"
                    nil)))
-  (should (equal "t"
+  (should (equal t
                  (with-default-emacs
                    "foo"
                    t))))
@@ -102,7 +102,7 @@
 
 (ert-deftest with-emacs-test-scope-isolate ()
  (should
-  (equal "\"Hi, Tom\""
+  (equal "Hi, Tom"
          (with-default-emacs
            (defun greet (name)
              (message "Hi, %s" name))

@@ -31,7 +31,7 @@ Clone this repository to `~/.emacs.d/site-lisp/with-emacs`. Add the following to
 ```elisp
 (with-emacs "/Applications/Emacs-24.3.app/Contents/MacOS/Emacs"
   (fboundp 'string-suffix-p))
-;; => "nil"
+;; => nil
 ```
 
 ### Get doc string from a specific version of Emacs
@@ -62,13 +62,13 @@ Clone this repository to `~/.emacs.d/site-lisp/with-emacs`. Add the following to
                   (buffer-substring-no-properties (point-min)
                                                   (point-max)))))
 ;; => 
-;; \"assoc is a built-in function in `C source code'.
+;; "assoc is a built-in function in `C source code'.
 ;;
 ;; (assoc KEY LIST)
 ;;
 ;; Return non-nil if KEY is `equal' to the car of an element of LIST.
 ;; The value is actually the first element of LIST whose car equals KEY.
-;; \""
+;; "
 ```
 
 ### Run test code in isolated scope
@@ -77,11 +77,11 @@ Clone this repository to `~/.emacs.d/site-lisp/with-emacs`. Add the following to
 (defun greet (name)
   (message "Hello, %s" name))
 
-(with-emacs "/Applications/Emacs-26.2.app/Contents/MacOS/Emacs"
+(with-emacs "/Applications/Emacs-26.1.app/Contents/MacOS/Emacs"
   (defun greet (name)
     (message "Hi, %s" name))
   (greet "Tom"))
-;; => "\"Hi, Tom\""
+;; => "Hi, Tom"
 
 (greet "Tom")
 ;; => "Hello, Tom"
