@@ -49,7 +49,9 @@
 
 ;;; Code:
 
-(defcustom with-emacs-default-path "emacs"
+(require 'cl-lib)
+
+(defcustom with-emacs-default-path (concat invocation-directory invocation-name)
   "Default path of Emacs."
   :type 'string
   :group 'with-emacs)
@@ -69,7 +71,6 @@
   :type 'string
   :group 'with-emacs)
 
-
 (defun with-emacs--extract-return-value (s)
   "Extract return value from string S."
   (with-temp-buffer
@@ -78,9 +79,9 @@
     (goto-char (point-max))
     (sexp-at-point)))
 
-(defmacro with-emacs (path &rest body)
+(cl-defmacro with-emacs (&rest body &key path &allow-other-keys)
   "Start a emacs in a subprocess, and execute BODY there.
-PATH is the abs path for emacs."
+If PATH is nil, use `with-emacs-default-path'."
   (declare (indent defun) (debug t))
   `(let* ((process-connection-type nil)
           (eoe-indicator "with-emacs-eoe")
@@ -111,7 +112,7 @@ PATH is the abs path for emacs."
          (mapcar (lambda (it)
                    (insert (format "%S" it))
                    (comint-send-input))
-                 '(,@body)))
+                 (funcall (if ,path 'cddr 'identity) ',body)))
 
        ;; Finish
        (process-send-string proc (format "%S\n" eoe-indicator))
@@ -120,7 +121,7 @@ PATH is the abs path for emacs."
        (while (and (eq 'run (process-status proc))
                    (progn
                      (goto-char comint-last-input-end)
-                     (not 
+                     (not
                       (save-excursion
                         (re-search-forward
                          (regexp-quote eoe-indicator) nil t)))))
@@ -132,7 +133,7 @@ PATH is the abs path for emacs."
          (process-send-string proc "(kill-emacs)\n"))
 
        ;; Waiting for the process exiting
-       (while (not (memq (process-status proc) '(exit signal))) 
+       (while (not (memq (process-status proc) '(exit signal)))
          (sit-for 0.1))
 
        ;; Handle abnormal exist
@@ -165,12 +166,6 @@ PATH is the abs path for emacs."
                  strs)
            ;; Return the result of the last expression as a string
            (with-emacs--extract-return-value ret))))))
-
-(defmacro with-default-emacs (&rest body)
-  "An alias for `(with-emacs nil ...)'."
-  (declare (indent defun) (debug t))
-  `(with-emacs nil
-     ,@body))
 
 (provide 'with-emacs)
 

@@ -25,33 +25,33 @@
 
 (ert-deftest with-emacs-test-return-string ()
   (should (equal "foo"
-                 (with-default-emacs
+                 (with-emacs
                    "foo"))))
 
 (ert-deftest with-emacs-test-return-string-with-newline ()
   (should (equal "foo\n"
-                 (with-default-emacs
+                 (with-emacs
                    "foo\n"))))
 
 (ert-deftest with-emacs-test-return-symbol ()
   (should (equal 'foo
-                 (with-default-emacs
+                 (with-emacs
                    'foo))))
 
 (ert-deftest with-emacs-test-return-nil ()
   (should (equal nil
-                 (with-default-emacs
+                 (with-emacs
                    nil))))
 
 (ert-deftest with-emacs-test-return-t ()
   (should (equal t
-                 (with-default-emacs
+                 (with-emacs
                    t))))
 
 (ert-deftest with-emacs-test-print-message ()
   (should (equal "AFE1CEFE-622C-4CED-B50E-9C95F2AF5F50"
                  (progn
-                   (with-default-emacs
+                   (with-emacs
                      (message "AFE1CEFE-622C-4CED-B50E-9C95F2AF5F50"))
                    (with-current-buffer "*Messages*"
                      (let ((s (buffer-substring-no-properties (point-min) (point-max))))
@@ -61,7 +61,7 @@
 (ert-deftest with-emacs-test-print-message-while-return-string ()
   (should (equal "AFE1CEFE-622C-4CED-B50E-9C95F2AF5F50"
                  (progn
-                   (with-default-emacs
+                   (with-emacs
                      (defun foo ()
                        (message "AFE1CEFE-622C-4CED-B50E-9C95F2AF5F50")
                        "foo")
@@ -75,7 +75,7 @@
 (ert-deftest with-emacs-test-print-message-while-return-symbol ()
   (should (equal "AFE1CEFE-622C-4CED-B50E-9C95F2AF5F50"
                  (progn
-                   (with-default-emacs
+                   (with-emacs
                      (defun foo ()
                        (message "AFE1CEFE-622C-4CED-B50E-9C95F2AF5F50")
                        'foo)
@@ -89,7 +89,7 @@
 (ert-deftest with-emacs-test-print-message-while-return-nil ()
   (should (equal "AFE1CEFE-622C-4CED-B50E-9C95F2AF5F50"
                  (progn
-                   (with-default-emacs
+                   (with-emacs
                      (defun foo ()
                        (message "AFE1CEFE-622C-4CED-B50E-9C95F2AF5F50")
                        nil)
@@ -103,7 +103,7 @@
 (ert-deftest with-emacs-test-print-message-while-return-t ()
   (should (equal "AFE1CEFE-622C-4CED-B50E-9C95F2AF5F50"
                  (progn
-                   (with-default-emacs
+                   (with-emacs
                      (defun foo ()
                        (message "AFE1CEFE-622C-4CED-B50E-9C95F2AF5F50")
                        t)
@@ -120,7 +120,7 @@
 (ert-deftest with-emacs-test-scope-isolate ()
  (should
   (equal "Hi, Tom"
-         (with-default-emacs
+         (with-emacs
            (defun greet (name)
              (message "Hi, %s" name))
            (greet "Tom"))))

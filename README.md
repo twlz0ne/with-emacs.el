@@ -15,11 +15,13 @@ Clone this repository to `~/.emacs.d/site-lisp/with-emacs`. Add the following to
 ## Usage
 
 ```elisp
-(with-emacs "/path/to/version/emacs"
+;; Use the same version of current Emacs
+(with-emacs 
   (do-something)
   ...)
 
-(with-default-emacs ;; or `(with-emacs nil'
+;; Use the specified version of Emacs
+(with-emacs :path "/path/to/version/emacs"
   (do-something)
   ...)
 ```
@@ -29,7 +31,7 @@ Clone this repository to `~/.emacs.d/site-lisp/with-emacs`. Add the following to
 ### Determine if a function exists in a specific version of Emacs
 
 ```elisp
-(with-emacs "/Applications/Emacs-24.3.app/Contents/MacOS/Emacs"
+(with-emacs :path "/Applications/Emacs-24.3.app/Contents/MacOS/Emacs"
   (fboundp 'string-suffix-p))
 ;; => nil
 ```
@@ -37,7 +39,7 @@ Clone this repository to `~/.emacs.d/site-lisp/with-emacs`. Add the following to
 ### Get doc string from a specific version of Emacs
 
 ```elisp
-(with-emacs "/Applications/Emacs-24.4.app/Contents/MacOS/Emacs"
+(with-emacs :path "/Applications/Emacs-24.4.app/Contents/MacOS/Emacs"
   (unless (fboundp 'elisp--company-doc-buffer)
     (defun elisp--company-doc-buffer (str)
       (let ((symbol (intern-soft str)))
@@ -77,7 +79,7 @@ Clone this repository to `~/.emacs.d/site-lisp/with-emacs`. Add the following to
 (defun greet (name)
   (message "Hello, %s" name))
 
-(with-emacs "/Applications/Emacs-26.1.app/Contents/MacOS/Emacs"
+(with-emacs
   (defun greet (name)
     (message "Hi, %s" name))
   (greet "Tom"))
