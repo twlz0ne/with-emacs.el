@@ -114,6 +114,24 @@
                        (when (string-match "\s*\\(AFE1CEFE-622C-4CED-B50E-9C95F2AF5F50\\)\s*" s)
                          (match-string 1 s))))))))
 
+(ert-deftest with-emacs-test-lexical-t ()
+  (should (equal 4
+                 (with-emacs
+                   :lexical t
+                   (defun fun-fun (f)
+                     (lambda (x) (funcall f x)))
+                   (funcall (fun-fun #'1+) 3)))))
+
+(ert-deftest with-emacs-test-lexical-nil ()
+  (should (equal "Symbol’s value as variable is void: f\n"
+                 (condition-case err
+                     (with-emacs
+                       :lexical nil
+                       (defun fun-fun (f)
+                         (lambda (x) (funcall f x)))
+                       (funcall (fun-fun #'1+) 3))
+                   (error (replace-regexp-in-string "'" "’" (cadr err)))))))
+
 (defun greet (name)
   (message "Hello, %s" name))
 
