@@ -51,8 +51,8 @@
 
 (require 'cl-lib)
 
-(defcustom with-emacs-default-path (concat invocation-directory invocation-name)
-  "Default path of Emacs."
+(defcustom with-emacs-executable-path (concat invocation-directory invocation-name)
+  "Location of Emacs executable."
   :type 'string
   :group 'with-emacs)
 
@@ -86,7 +86,7 @@
 
 (cl-defmacro with-emacs (&rest body &key path lexical &allow-other-keys)
   "Start a emacs in a subprocess, and execute BODY there.
-If PATH not set, use `with-emacs-default-path'.
+If PATH not set, use `with-emacs-executable-path'.
 If LEXICAL not set, use `with-emacs-lexical-binding.'"
   (declare (indent defun) (debug t))
   (let ((has-path? (and (plist-member body :path) t))
@@ -98,7 +98,7 @@ If LEXICAL not set, use `with-emacs-lexical-binding.'"
     `(let* ((process-connection-type nil)
             (eoe-indicator "with-emacs-eoe")
             (comint-prompt-regexp "Lisp expression: ")
-            (cmdlist '(,(or path with-emacs-default-path)
+            (cmdlist '(,(or path with-emacs-executable-path)
                        "--batch"
                        "--eval"
                        ,(format "(setq lexical-binding %s)" (if has-lexical? lexical with-emacs-lexical-binding))
