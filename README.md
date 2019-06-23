@@ -20,8 +20,8 @@ Clone this repository to `~/.emacs.d/site-lisp/with-emacs`. Add the following to
   (do-something)
   ...)
 
-;; Use the specified version of Emacs
-(with-emacs :path "/path/to/version/emacs"
+;; Use the specified version of Emacs and enable lexical binding
+(with-emacs :path "/path/to/version/emacs" :lexical t
   (do-something)
   ...)
 ```

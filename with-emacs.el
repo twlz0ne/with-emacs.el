@@ -1,4 +1,4 @@
-;;; with-emacs.el --- Evaluate expressions in a separate Emacs process -*- lexical-binding: t; -*-
+;;; with-emacs.el --- Evaluate Emacs Lisp expressions in a separate Emacs process -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2019 Gong Qijian <gongqijian@gmail.com>
 
@@ -20,14 +20,14 @@
 ;; GNU General Public License for more details.
 
 ;; You should have received a copy of the GNU General Public License
-;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 ;;; Commentary:
 
 ;; Evaluate expressions in a separate Emacs process:
 ;;
 ;; ```elisp
-;; (with-emacs "/path/to/version/emacs"
+;; (with-emacs :path "/path/to/version/emacs" :lexical t
 ;;   (do-something)
 ;;   ...)
 ;; ```
@@ -111,8 +111,8 @@ If LEXICAL not set, use `with-emacs-lexical-binding.'"
              (lambda (text)
                ;; (message "==> text: %s" text)
                (setq output (concat output text))))
-            (buf (apply 'make-comint-in-buffer "elpl"
-                        (generate-new-buffer-name "*elpl*")
+            (buf (apply 'make-comint-in-buffer "with-emacs"
+                        (generate-new-buffer-name "*with-emacs*")
                         (car cmdlist) nil (cdr cmdlist)))
             (proc (get-buffer-process buf)))
 
