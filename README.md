@@ -1,4 +1,5 @@
 [![Build Status](https://travis-ci.com/twlz0ne/with-emacs.el.svg?branch=master)](https://travis-ci.com/twlz0ne/with-emacs.el)
+[![MELPA](https://melpa.org/packages/with-emacs-badge.svg)](https://melpa.org/#/with-emacs)
 
 # with-emacs.el
 
@@ -6,7 +7,7 @@ Evaluate expressions in a separate Emacs process.
 
 ## Installation
 
-Clone this repository to `~/.emacs.d/site-lisp/with-emacs`. Add the following to your `.emacs`:
+Clone this repository, or install from MELPA. Add the following to your `.emacs`:
 
 ```elisp
 (require 'with-emacs)
