@@ -50,6 +50,7 @@
 ;;; Code:
 
 (require 'cl-lib)
+(require 'comint)
 
 (defcustom with-emacs-executable-path (concat invocation-directory invocation-name)
   "Location of Emacs executable."
@@ -76,6 +77,67 @@
   :type 'string
   :group 'with-emacs)
 
+(defvar with-emacs-sit-for-seconds 0.1
+  "Comint buffer/process polling interval.")
+
+(defun with-emacs--cli-args (path lexical)
+  `(,path
+    "--batch"
+    "--eval" ,(format "(setq lexical-binding %s)" lexical)
+    "--eval" ,(format "%s" '(while t (prin1 (eval (read) lexical-binding))))))
+
+(defun with-emacs--eval-expr-send-input (proc form eoe-indicator)
+  ;; Clean buffer
+  (delete-region (point-min) (point-max))
+
+  ;; Send input
+  (let ((print-escape-newlines t))
+    (mapc (lambda (it)
+            (insert (format "%S" it))
+            (comint-send-input))
+          form))
+
+  ;; Finish
+  (process-send-string proc (format "%S\n" eoe-indicator)))
+
+(defun with-emacs--eval-expr-accept-output (proc eoe-indicator)
+  ;; Accept output
+  (while (and (eq 'run (process-status proc))
+              (progn
+                (goto-char comint-last-input-end)
+                (not
+                 (save-excursion
+                   (re-search-forward
+                    (regexp-quote eoe-indicator) nil t)))))
+    (accept-process-output (get-buffer-process (current-buffer)))
+    (sit-for with-emacs-sit-for-seconds))
+
+  ;; Kill process
+  (when (eq 'run (process-status proc))
+    (process-send-string proc "(kill-emacs)\n"))
+
+  ;; Waiting for the process exiting
+  (while (not (memq (process-status proc) '(exit signal)))
+    (sit-for with-emacs-sit-for-seconds)))
+
+(defun with-emacs--eval-expr-error-message (proc)
+  (when (< 0 (process-exit-status proc))
+    (save-excursion
+      (goto-char comint-last-output-start)
+      (save-restriction
+        (narrow-to-region comint-last-output-start
+                          (goto-char (next-property-change (point))))
+        (buffer-substring-no-properties (point-min) (point-max))))))
+
+(defun with-emacs--eval-expr (buf form eoe-indicator)
+  (let ((proc (get-buffer-process buf)))
+    (with-current-buffer buf
+      (with-emacs--eval-expr-send-input proc form eoe-indicator)
+      (with-emacs--eval-expr-accept-output proc eoe-indicator)
+      (prog1 (with-emacs--eval-expr-error-message proc)
+        (let ((kill-buffer-query-functions nil))
+          (kill-buffer buf))))))
+
 (defun with-emacs--extract-return-value (s)
   "Extract return value from string S."
   (with-temp-buffer
@@ -83,6 +145,21 @@
     (emacs-lisp-mode)
     (goto-char (point-max))
     (sexp-at-point)))
+
+(defun with-emacs--handle-output (output error)
+  (if error
+      (signal 'error (list error))
+    (when output
+      (let* ((strs (split-string output comint-prompt-regexp))
+             (ret (car (cddr (reverse strs)))))
+        ;; Redirect message to `*Messages*'
+        (mapc (lambda (s)
+                ;; (message "s: [%S]" s) ;; debug
+                (when (string-match with-emacs-output-regexp s)
+                  (message (match-string 1 s))))
+              strs)
+        ;; Return the result of the last expression as a string
+        (with-emacs--extract-return-value ret)))))
 
 (cl-defmacro with-emacs (&rest body &key path lexical &allow-other-keys)
   "Start a emacs in a subprocess, and execute BODY there.
@@ -98,88 +175,20 @@ If LEXICAL not set, use `with-emacs-lexical-binding.'"
     `(let* ((process-connection-type nil)
             (eoe-indicator "with-emacs-eoe")
             (comint-prompt-regexp "Lisp expression: ")
-            (cmdlist '(,(or path with-emacs-executable-path)
-                       "--batch"
-                       "--eval"
-                       ,(format "(setq lexical-binding %s)" (if has-lexical? lexical with-emacs-lexical-binding))
-                       "--eval"
-                       ,(format "%s" '(while t (prin1 (eval (read) lexical-binding))))))
+            (cmdlist (with-emacs--cli-args
+                      ,(or path with-emacs-executable-path)
+                      ,(if has-lexical? lexical with-emacs-lexical-binding)))
             (pbuf ,(current-buffer))
             (output nil)
-            (error-msg nil)
             (comint-output-filter-functions
              (lambda (text)
                ;; (message "==> text: %s" text)
                (setq output (concat output text))))
             (buf (apply 'make-comint-in-buffer "with-emacs"
                         (generate-new-buffer-name "*with-emacs*")
-                        (car cmdlist) nil (cdr cmdlist)))
-            (proc (get-buffer-process buf)))
-
-       ;; -------------------
-       ;; Execute expressions
-       ;; -------------------
-
-       (with-current-buffer buf
-         (delete-region (point-min) (point-max))
-         (let ((print-escape-newlines t))
-           (mapcar (lambda (it)
-                     (insert (format "%S" it))
-                     (comint-send-input))
-                   ',body))
-
-         ;; Finish
-         (process-send-string proc (format "%S\n" eoe-indicator))
-
-         ;; Waiting for output
-         (while (and (eq 'run (process-status proc))
-                     (progn
-                       (goto-char comint-last-input-end)
-                       (not
-                        (save-excursion
-                          (re-search-forward
-                           (regexp-quote eoe-indicator) nil t)))))
-           (accept-process-output (get-buffer-process (current-buffer)))
-           (sit-for 0.1))
-
-         ;; Normal exist
-         (when (eq 'run (process-status proc))
-           (process-send-string proc "(kill-emacs)\n"))
-
-         ;; Waiting for the process exiting
-         (while (not (memq (process-status proc) '(exit signal)))
-           (sit-for 0.1))
-
-         ;; Handle abnormal exist
-         (when (< 0 (process-exit-status proc))
-           (setq error-msg
-                 (save-excursion
-                   (goto-char comint-last-output-start)
-                   (save-restriction
-                     (narrow-to-region comint-last-output-start
-                                       (goto-char (next-property-change (point))))
-                     (buffer-substring-no-properties (point-min) (point-max)))))))
-
-       ;; --------------
-       ;; Process result
-       ;; --------------
-
-       (let ((kill-buffer-query-functions nil))
-         (kill-buffer buf))
-
-       (if error-msg
-           (signal 'error (list error-msg))
-         (when output
-           (let* ((strs (split-string output comint-prompt-regexp))
-                  (ret (car (cddr (reverse strs)))))
-             ;; Redirect message to `*Messages*'
-             (mapc (lambda (s)
-                     ;; (message "s: [%S]" s) ;; debug
-                     (when (string-match with-emacs-output-regexp s)
-                       (message (match-string 1 s))))
-                   strs)
-             ;; Return the result of the last expression as a string
-             (with-emacs--extract-return-value ret)))))))
+                        (car cmdlist) nil (cdr cmdlist))))
+       (let ((error (with-emacs--eval-expr buf ',body eoe-indicator)))
+         (with-emacs--handle-output output error)))))
 
 (provide 'with-emacs)
 
