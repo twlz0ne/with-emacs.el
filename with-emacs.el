@@ -36,6 +36,10 @@
 
 ;;; Change Log:
 
+
+;; 0.2.1  2019/08/19
+;;
+;;   Refactor the macro with-emacs
 ;;
 ;; 0.2.0  2019/06/05
 ;;
