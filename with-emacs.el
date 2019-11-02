@@ -165,23 +165,22 @@
         ;; Return the result of the last expression as a string
         (with-emacs--extract-return-value ret)))))
 
-(cl-defmacro with-emacs (&rest body &key path lexical &allow-other-keys)
+(cl-defmacro with-emacs (&rest body
+                         &key
+                           (path nil has-path?)
+                           (lexical nil has-lexical?)
+                         &allow-other-keys)
   "Start a emacs in a subprocess, and execute BODY there.
 If PATH not set, use `with-emacs-executable-path'.
 If LEXICAL not set, use `with-emacs-lexical-binding.'"
   (declare (indent defun) (debug t))
-  (let ((has-path? (and (plist-member body :path) t))
-        (has-lexical? (and (plist-member body :lexical) t)))
-    (when has-lexical?
-      (setq body (cddr body)))
-    (when has-path?
-      (setq body (cddr body)))
+  (let ((cmdlist (with-emacs--cli-args
+                  (if has-path? path with-emacs-executable-path)
+                  (if has-lexical? lexical with-emacs-lexical-binding))))
     `(let* ((process-connection-type nil)
             (eoe-indicator "with-emacs-eoe")
             (comint-prompt-regexp "Lisp expression: ")
-            (cmdlist (with-emacs--cli-args
-                      ,(or path with-emacs-executable-path)
-                      ,(if has-lexical? lexical with-emacs-lexical-binding)))
+            (cmdlist ',cmdlist)
             (pbuf ,(current-buffer))
             (output nil)
             (comint-output-filter-functions
