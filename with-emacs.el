@@ -4,7 +4,7 @@
 
 ;; Author: Gong Qijian <gongqijian@gmail.com>
 ;; Created: 2019/04/20
-;; Version: 0.2.0
+;; Version: 0.3.0
 ;; Package-Requires: ((emacs "24.4"))
 ;; URL: https://github.com/twlz0ne/with-emacs.el
 ;; Keywords: tools
@@ -36,7 +36,10 @@
 
 ;;; Change Log:
 
-
+;;
+;; 0.3.0  2019/11/15
+;;   Add macro `with-emacs-define-partially-applied'.
+;;
 ;; 0.2.1  2019/08/19
 ;;
 ;;   Refactor the macro with-emacs
@@ -54,6 +57,7 @@
 ;;; Code:
 
 (require 'cl-lib)
+(require 'cl-seq)
 (require 'comint)
 
 (defcustom with-emacs-executable-path (concat invocation-directory invocation-name)
@@ -192,6 +196,53 @@ If LEXICAL not set, use `with-emacs-lexical-binding.'"
                         (car cmdlist) nil (cdr cmdlist))))
        (let ((error (with-emacs--eval-expr buf ',body eoe-indicator)))
          (with-emacs--handle-output output error)))))
+
+(defvar with-emacs-partially-applied-functions '() "List of partially applied functions")
+
+(defmacro with-emacs-define-partially-applied (&rest args)
+  "Generate functions that are partial application of `with-emacs' to ARGS.
+
+The form of ARGS is:
+
+   (part-name1 path1 lexical-or-not)
+   (part-name2 path2 lexical-or-not)
+   ...
+
+For example:
+
+  ```
+  (with-emacs-define-partially-applied
+   (t      nil t)
+   (24.3   \"/path/to/emacs-24.3\")
+   (24.4-t \"/path/to/emacs-24.4\" t))
+  ;; =>
+  ;; (with-emacs-t      &rest BODY &key PATH)
+  ;; (with-emacs-24.3   &rest BODY &key LEXICAL)
+  ;; (with-emacs-24.4-t &rest BODY)
+  ```"
+  (dolist (arg args)
+    (pcase-let ((`(,part-name ,path ,lexical) arg))
+      (let ((name (intern (format "with-emacs-%s" part-name)))
+            (keys (cl-remove-if
+                   'null
+                   `(,(unless path    '(path    nil has-path?))
+                     ,(unless lexical '(lexical nil has-lexical?))))))
+        (when keys
+          (setq keys
+                (append
+                 (push '&key keys)
+                 '(&allow-other-keys))))
+        (eval
+         `(cl-defmacro ,name (&rest body ,@keys)
+            (declare (indent defun) (debug t))
+            (let ((params
+                   (flatten-list
+                    (cl-remove-if
+                     'null
+                     (list (when ,path    '(:path    ,path))
+                           (when ,lexical '(:lexical ,lexical)))))))
+              `(with-emacs ,@params ,@body))))
+        (add-to-list 'with-emacs-partially-applied-functions name)))))
 
 (provide 'with-emacs)
 

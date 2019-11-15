@@ -18,13 +18,19 @@ Clone this repository, or install from MELPA. Add the following to your `.emacs`
 ```elisp
 ;; Use the same version of current Emacs
 (with-emacs 
-  (do-something)
   ...)
 
 ;; Use the specified version of Emacs and enable lexical binding
-(with-emacs :path "/path/to/version/emacs" :lexical t
-  (do-something)
+(with-emacs :path "/path/to/{version}/emacs" :lexical t
   ...)
+
+;; Use partially applied function (see `with-emacs-define-partially-applied`)
+;; instead of writting verry long parameter each time:
+(with-emacs-nightly-t
+  ...)
+;; =>
+;; (with-emacs :path "/path/to/nightly/emacs" :lexical t
+;;   ...)
 ```
 
 ## Examples
@@ -32,7 +38,7 @@ Clone this repository, or install from MELPA. Add the following to your `.emacs`
 ### Determine if a function exists in a specific version of Emacs
 
 ```elisp
-(with-emacs :path "/Applications/Emacs-24.3.app/Contents/MacOS/Emacs"
+(with-emacs-24.3
   (fboundp 'string-suffix-p))
 ;; => nil
 ```
@@ -40,7 +46,7 @@ Clone this repository, or install from MELPA. Add the following to your `.emacs`
 ### Get doc string from a specific version of Emacs
 
 ```elisp
-(with-emacs :path "/Applications/Emacs-24.4.app/Contents/MacOS/Emacs"
+(with-emacs-24.4
   (unless (fboundp 'elisp--company-doc-buffer)
     (defun elisp--company-doc-buffer (str)
       (let ((symbol (intern-soft str)))
