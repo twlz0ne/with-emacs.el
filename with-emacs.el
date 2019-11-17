@@ -57,7 +57,6 @@
 ;;; Code:
 
 (require 'cl-lib)
-(require 'cl-seq)
 (require 'comint)
 
 (defcustom with-emacs-executable-path (concat invocation-directory invocation-name)
@@ -223,8 +222,8 @@ For example:
   (dolist (arg args)
     (pcase-let ((`(,part-name ,path ,lexical) arg))
       (let ((name (intern (format "with-emacs-%s" part-name)))
-            (keys (cl-remove-if
-                   'null
+            (keys (remove
+                   nil
                    `(,(unless path    '(path    nil has-path?))
                      ,(unless lexical '(lexical nil has-lexical?))))))
         (when keys
@@ -237,8 +236,8 @@ For example:
             (declare (indent defun) (debug t))
             (let ((params
                    (flatten-list
-                    (cl-remove-if
-                     'null
+                    (remove
+                     nil
                      (list (when ,path    '(:path    ,path))
                            (when ,lexical '(:lexical ,lexical)))))))
               `(with-emacs ,@params ,@body))))
