@@ -87,6 +87,28 @@
 (defvar with-emacs-sit-for-seconds 0.1
   "Comint buffer/process polling interval.")
 
+(defalias 'with-emacs--flatten
+  (if (fboundp 'flatten-tree) 'flatten-tree
+    ;; From Emacs 27 nightly:
+    ;; https://emba.gnu.org/emacs/emacs/commit/36b05dc84247db1391a423df94e4b9a478e29dc5
+    (lambda (tree)
+      "Return a \"flattened\" copy of TREE.
+In other words, return a list of the non-nil terminal nodes, or
+leaves, of the tree of cons cells rooted at TREE.  Leaves in the
+returned list are in the same order as in TREE.
+
+\(flatten-tree \\='(1 (2 . 3) nil (4 5 (6)) 7))
+=> (1 2 3 4 5 6 7)"
+      (let (elems)
+        (while (consp tree)
+          (let ((elem (pop tree)))
+            (while (consp elem)
+              (push (cdr elem) tree)
+              (setq elem (car elem)))
+            (if elem (push elem elems))))
+        (if tree (push tree elems))
+        (nreverse elems)))))
+
 (defun with-emacs--cli-args (path lexical)
   `(,path
     "--batch"
@@ -235,7 +257,7 @@ For example:
          `(cl-defmacro ,name (&rest body ,@keys)
             (declare (indent defun) (debug t))
             (let ((params
-                   (flatten-list
+                   (with-emacs--flatten
                     (remove
                      nil
                      (list (when ,path    '(:path    ,path))
