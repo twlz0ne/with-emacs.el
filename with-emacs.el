@@ -109,6 +109,15 @@ returned list are in the same order as in TREE.
         (if tree (push tree elems))
         (nreverse elems)))))
 
+(defun with-emacs--cl-args-body (args)
+  "Remove leading key-value pairs from ARGS."
+  (let ((it args))
+    (catch 'break
+      (while t
+        (if (keywordp (car it))
+            (setq it (cddr it))
+          (throw 'break it))))))
+
 (defun with-emacs--cli-args (path lexical)
   `(,path
     "--batch"
@@ -217,6 +226,37 @@ If LEXICAL not set, use `with-emacs-lexical-binding.'"
                         (car cmdlist) nil (cdr cmdlist))))
        (let ((error (with-emacs--eval-expr buf ',body eoe-indicator)))
          (with-emacs--handle-output output error)))))
+
+(cl-defmacro with-emacs-server (server
+                                &rest
+                                  body
+                                &key
+                                  (ensure nil has-ensure?)
+                                &allow-other-keys)
+  "Contact the Emacs server named SERVER and evaluate FORM there.
+Returns the result of the evaluation, or signals an error if it
+cannot contact the specified server.
+
+If ENSURE not nil, start a server when necessary. It can be t or
+a path of emacs, if it is t, use `with-emacs-executable-path'.
+
+\(with-emacs-server \"foo\"
+  :ensure t
+  (1+ 1))
+=> 2"
+  (declare (indent 1) (debug t))
+  (require 'server)
+  (let* ((server-dir (if server-use-tcp server-auth-dir server-socket-dir))
+         (server-file (expand-file-name server server-dir)))
+    (unless (file-exists-p server-file)
+      (if has-ensure?
+          (shell-command
+           (format "%s -Q --daemon=%s"
+                   (cond ((stringp ensure) ensure)
+                         (t with-emacs-executable-path))
+                   server))
+        (error "No such server: %s" server)))
+    `(server-eval-at ,server ',@(with-emacs--cl-args-body body))))
 
 (defvar with-emacs-partially-applied-functions '() "List of partially applied functions")
 
