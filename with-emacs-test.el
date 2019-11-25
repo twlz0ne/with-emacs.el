@@ -146,6 +146,24 @@
   (equal "Hello, Tom"
          (greet "Tom"))))
 
+(ert-deftest with-emacs-test-server ()
+  (should
+   (equal "No such server: 44f346a5-a85d-940c-b2ca-9f9b5193ee5e"
+          (condition-case err
+              (with-emacs-server "44f346a5-a85d-940c-b2ca-9f9b5193ee5e" 1)
+            (error
+             (cadr err)))))
+  (should
+   (equal 2 (with-emacs-server "44f346a5-a85d-940c-b2ca-9f9b5193ee5e" :ensure t 2)))
+  (should
+   (equal "No such server: 44f346a5-a85d-940c-b2ca-9f9b5193ee5e"
+          (condition-case err
+              (progn
+                (with-emacs-server "44f346a5-a85d-940c-b2ca-9f9b5193ee5e" (kill-emacs))
+                (with-emacs-server "44f346a5-a85d-940c-b2ca-9f9b5193ee5e" 3))
+            (error
+             (cadr err))))))
+
 (provide 'with-emacs-test)
 
 ;;; with-emacs-test.el ends here

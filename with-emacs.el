@@ -58,6 +58,7 @@
 
 (require 'cl-lib)
 (require 'comint)
+(require 'server)
 
 (defcustom with-emacs-executable-path (concat invocation-directory invocation-name)
   "Location of Emacs executable."
@@ -245,18 +246,17 @@ a path of emacs, if it is t, use `with-emacs-executable-path'.
   (1+ 1))
 => 2"
   (declare (indent 1) (debug t))
-  (require 'server)
-  (let* ((server-dir (if server-use-tcp server-auth-dir server-socket-dir))
-         (server-file (expand-file-name server server-dir)))
-    (unless (file-exists-p server-file)
-      (if has-ensure?
-          (shell-command
-           (format "%s -Q --daemon=%s"
-                   (cond ((stringp ensure) ensure)
-                         (t with-emacs-executable-path))
-                   server))
-        (error "No such server: %s" server)))
-    `(server-eval-at ,server ',@(with-emacs--cl-args-body body))))
+  `(let* ((server-dir (if server-use-tcp server-auth-dir server-socket-dir))
+          (server-file (expand-file-name ,server server-dir)))
+       (unless (file-exists-p server-file)
+         (if ,has-ensure?
+             (shell-command
+              (format "%s -Q --daemon=%s"
+                      (cond ((stringp ,ensure) ,ensure)
+                            (t with-emacs-executable-path))
+                      ,server))
+           (error "No such server: %s" ,server)))
+       (server-eval-at ,server '(progn ,@(with-emacs--cl-args-body body)))))
 
 (defvar with-emacs-partially-applied-functions '() "List of partially applied functions")
 
