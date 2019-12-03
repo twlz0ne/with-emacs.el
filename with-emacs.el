@@ -278,7 +278,10 @@ a path of emacs, if it is t, use `with-emacs-executable-path'.
                             (t with-emacs-executable-path))
                       ,server))
            (error "No such server: %s" ,server)))
-       (server-eval-at ,server '(progn ,@(with-emacs--cl-args-body body)))))
+       (server-eval-at ,server
+                       '(condition-case err
+                            (progn ,@(with-emacs--cl-args-body body))
+                          (error err)))))
 
 (defvar with-emacs-partially-applied-functions '() "List of partially applied functions")
 
