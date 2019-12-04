@@ -217,7 +217,13 @@ returned list are in the same order as in TREE.
         (mapc (lambda (s)
                 ;; (message "s: [%S]" s) ;; debug
                 (when (string-match with-emacs-output-regexp s)
-                  (message (match-string 1 s))))
+                  (with-current-buffer (get-buffer "*Messages*")
+                    (let ((inhibit-read-only t)
+                          (msg (match-string 1 s)))
+                      (goto-char (point-max))
+                      (insert "\n")
+                      (insert msg)
+                      msg))))
               strs)
         ;; Return the result of the last expression as a string
         (with-emacs--extract-return-value ret)))))

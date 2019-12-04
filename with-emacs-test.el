@@ -48,6 +48,12 @@
                  (with-emacs
                    t))))
 
+(ert-deftest with-emacs-test-raeturn-encoded-url ()
+  (should
+   (equal (concat (url-encode-url "https://en.wikipedia.org/wiki/René_Descartes") "\n")
+          (with-emacs
+            (concat (url-encode-url "https://en.wikipedia.org/wiki/René_Descartes") "\n")))))
+
 (ert-deftest with-emacs-test-print-message ()
   (should (equal "AFE1CEFE-622C-4CED-B50E-9C95F2AF5F50"
                  (progn
