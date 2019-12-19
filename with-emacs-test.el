@@ -170,6 +170,9 @@
             (error
              (cadr err))))))
 
+(ert-deftest with-emacs-test-control-characters ()
+  (should (string= "\r\n" (with-emacs "\r\n"))))
+
 (provide 'with-emacs-test)
 
 ;;; with-emacs-test.el ends here

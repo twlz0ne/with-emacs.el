@@ -152,7 +152,8 @@ returned list are in the same order as in TREE.
   (delete-region (point-min) (point-max))
 
   ;; Send input
-  (let ((print-escape-newlines t))
+  (let ((print-escape-newlines t)
+        (print-escape-control-characters t))
     (mapc (lambda (it)
             (insert (format "%S" it))
             (comint-send-input))
