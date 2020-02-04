@@ -28,33 +28,44 @@
 ;;
 ;; ,---
 ;; | ;;; `with-emacs'
-;; |
+;; | 
 ;; | ;; Evaluate expressions in a separate Emacs.
 ;; | (with-emacs ...)
-;; |
+;; | 
 ;; | ;; Specify the version of Emacs and enable lexical binding
 ;; | (with-emacs :path "/path/to/{version}/emacs" :lexical t ...)
-;; |
+;; | 
 ;; | ;; Use partially applied function (see `with-emacs-define-partially-applied' for more)
 ;; | ;; instead of writting verry long parameter each time:
 ;; | (with-emacs-nightly-t ...)
 ;; | ;; Equaivalent to:
 ;; | ;; (with-emacs :path "/path/to/nightly/emacs" :lexical t ...)
-;; |
+;; | 
 ;; | ;;; `with-emacs-server'
-;; |
+;; | 
 ;; | ;; Evaluate expressions in server "name" or signal an error if no such server.
 ;; | (with-emacs-server "name" ...)
-;; |
+;; | 
 ;; | ;; Evaluate expressions in server "name" and start a server if necessary.
 ;; | (with-emacs-server "name" :ensure t ...)
 ;; | (with-emacs-server "name" :ensure "/path/to/{version}/emacs" ...)
+;; | 
+;; | ;; Kill server after 100 minutes of idle
+;; | (with-emacs-server "name" :ensure t :timeout 100 ...)
+;; | ;; Set default timeout for every new server:
+;; | (setq with-emacs-server-timeout 100)
+;; | (with-emacs-server "name" :ensure t ...)
+;; | ;; Disable default timeout temporary:
+;; | (with-emacs-server "name" :ensure t :timeout nil ...)
 ;; `---
 ;;
 ;; See README for more information.
 
 ;;; Change Log:
 
+;;
+;; 0.4.1  2020/02/05
+;;   Add timeout timer for `with-emacs-server'.
 ;;
 ;; 0.4.0  2019/11/25
 ;;   Add macro `with-emacs-server'.
@@ -105,6 +116,13 @@
       string-end)
   "Regexp for extracting message or result from output."
   :type 'string
+  :group 'with-emacs)
+
+(defcustom with-emacs-server-timeout nil
+  "Number of minutes idle time before kill server process, ‘nil’ means no timeout.
+
+This can be overwritten by parameter :timeout in ‘with-emacs-server’."
+  :type 'number
   :group 'with-emacs)
 
 (defvar with-emacs-sit-for-seconds 0.1
@@ -262,17 +280,23 @@ If LEXICAL not set, use `with-emacs-lexical-binding.'"
                                   body
                                 &key
                                   (ensure nil has-ensure?)
+                                  (timeout nil has-timeout?)
                                 &allow-other-keys)
   "Contact the Emacs server named SERVER and evaluate FORM there.
 Returns the result of the evaluation, or signals an error if it
 cannot contact the specified server.
 
 If ENSURE not nil, start a server when necessary. It can be t or
-a path of emacs, if it is t, use `with-emacs-executable-path'.
+a path of emacs, if it is t, use `with-emacs-executable-path' as default.
+
+The server will be killed after TIMEOUT minutes, if TIMEOUT not given,
+use `with-emacs-server-timeout' as default, if TIMEOUT is nil,
+disable timeout timer.
 
 \(with-emacs-server \"foo\"
   :ensure t
-  (1+ 1))
+  :timeout 100
+(1+ 1))
 => 2"
   (declare (indent 1) (debug t))
   `(let* ((server-dir (if server-use-tcp server-auth-dir server-socket-dir))
@@ -287,7 +311,13 @@ a path of emacs, if it is t, use `with-emacs-executable-path'.
            (error "No such server: %s" ,server)))
        (server-eval-at ,server
                        '(condition-case err
-                            (progn ,@(with-emacs--cl-args-body body))
+                            (progn
+                              (let ((time ,(if has-timeout? timeout
+                                             with-emacs-server-timeout)))
+                                (when time
+                                  (run-with-idle-timer time 0
+                                                       (lambda () (kill-emacs)))))
+                              ,@(with-emacs--cl-args-body body))
                           (error err)))))
 
 (defvar with-emacs-partially-applied-functions '() "List of partially applied functions")

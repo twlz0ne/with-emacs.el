@@ -170,6 +170,28 @@
             (error
              (cadr err))))))
 
+(ert-deftest with-emacs-test-server-timeout ()
+  (message "Waiting for server1 timeout...")
+  (should
+   (equal 1 (with-emacs-server "536d7f14-f4eb-661b-4087-f5c3c54e895b" :ensure t :timeout 0.2 1)))
+  (dotimes (_ 13)
+    (sit-for 1))
+  (equal "No such server: 536d7f14-f4eb-661b-4087-f5c3c54e895b"
+          (condition-case err
+              (with-emacs-server "536d7f14-f4eb-661b-4087-f5c3c54e895b" 1)
+            (error
+             (cadr err))))
+  (message "Waiting for server2 timeout...")
+  (setq with-emacs-server-timeout 0.2)
+  (equal 1 (with-emacs-server "ea3803d6-aa6d-4b38-f088-daf2d331bdc2" :ensure t 1))
+  (dotimes (_ 13)
+    (sit-for 1))
+  (equal "No such server: ea3803d6-aa6d-4b38-f088-daf2d331bdc2"
+         (condition-case err
+             (with-emacs-server "ea3803d6-aa6d-4b38-f088-daf2d331bdc2" 1)
+           (error
+            (cadr err)))))
+
 (ert-deftest with-emacs-test-control-characters ()
   (should (string= "\r\n" (with-emacs "\r\n"))))
 
