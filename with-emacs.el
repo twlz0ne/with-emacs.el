@@ -150,6 +150,10 @@ returned list are in the same order as in TREE.
         (if tree (push tree elems))
         (nreverse elems)))))
 
+(defun with-emacs--replace-CR-character-while-sending (fn proc string)
+  "Advice for FN to Replace CR character in STRING while sending to PROC."
+  (funcall fn proc (replace-regexp-in-string "\r" "\\\\r" string)))
+
 (defun with-emacs--cl-args-body (args)
   "Remove leading key-value pairs from ARGS."
   (let ((it args))
@@ -171,11 +175,16 @@ returned list are in the same order as in TREE.
 
   ;; Send input
   (let ((print-escape-newlines t)
-        (print-escape-control-characters t))
-    (mapc (lambda (it)
-            (insert (format "%S" it))
-            (comint-send-input))
-          form))
+        (print-escape-control-characters t)
+        (advice (and (= 25 emacs-major-version)
+                     #'with-emacs--replace-CR-character-while-sending)))
+    (when advice (advice-add comint-input-sender :around advice))
+    (unwind-protect
+        (mapc (lambda (it)
+                (insert (format "%S" it))
+                (comint-send-input))
+              form)
+      (when advice (advice-remove comint-input-sender advice))))
 
   ;; Finish
   (process-send-string proc (format "%S\n" eoe-indicator)))
