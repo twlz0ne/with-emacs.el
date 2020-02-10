@@ -4,7 +4,7 @@
 
 ;; Author: Gong Qijian <gongqijian@gmail.com>
 ;; Created: 2019/04/20
-;; Version: 0.4.0
+;; Version: 0.4.1
 ;; Package-Requires: ((emacs "24.4"))
 ;; URL: https://github.com/twlz0ne/with-emacs.el
 ;; Keywords: tools
