@@ -118,6 +118,19 @@
   :type 'string
   :group 'with-emacs)
 
+(defcustom with-emacs-server-ensure nil
+  "Default value of parameter ‘:ensure’ of ‘with-emacs-server’.
+It can be nil, t or string:
+
+nil     -- No default
+t       -- Follow the ‘with-emacs-executable-path’
+string  -- Custom path of Emacs executable"
+  :type '(choice
+          (const :tag "No default" nil)
+          (const :tag "Follow the ‘with-emacs-executable-path’" t)
+          (string :tag "Custom path of Emacs executable"))
+  :group 'with-emacs)
+
 (defcustom with-emacs-server-timeout nil
   "Number of minutes idle time before kill server process, ‘nil’ means no timeout.
 
@@ -288,8 +301,8 @@ If LEXICAL not set, use `with-emacs-lexical-binding.'"
                                 &rest
                                   body
                                 &key
-                                  (ensure nil has-ensure?)
-                                  (timeout nil has-timeout?)
+                                  ensure
+                                  timeout
                                 &allow-other-keys)
   "Contact the Emacs server named SERVER and evaluate FORM there.
 Returns the result of the evaluation, or signals an error if it
@@ -309,20 +322,20 @@ disable timeout timer.
 => 2"
   (declare (indent 1) (debug t))
   `(let* ((server-dir (if server-use-tcp server-auth-dir server-socket-dir))
-          (server-file (expand-file-name ,server server-dir)))
+          (server-file (expand-file-name ,server server-dir))
+          (ensure (or ,ensure with-emacs-server-ensure)))
        (unless (file-exists-p server-file)
-         (if ,has-ensure?
+         (if ensure
              (shell-command
               (format "%s -Q --daemon=%s"
-                      (cond ((stringp ,ensure) ,ensure)
+                      (cond ((stringp ensure) ensure)
                             (t with-emacs-executable-path))
                       ,server))
            (error "No such server: %s" ,server)))
        (server-eval-at ,server
                        '(condition-case err
                             (progn
-                              (let ((time ,(if has-timeout? timeout
-                                             with-emacs-server-timeout)))
+                              (let ((time ,(or timeout with-emacs-server-timeout)))
                                 (when time
                                   (run-with-idle-timer time 0
                                                        (lambda () (kill-emacs)))))
