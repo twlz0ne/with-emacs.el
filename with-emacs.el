@@ -138,6 +138,12 @@ This can be overwritten by parameter :timeout in ‘with-emacs-server’."
   :type 'number
   :group 'with-emacs)
 
+(defvar with-emacs-comint-prompt "DC5ECD81-02D0-44BC-AE41-889565D3907C"
+  "String to indicate new expression.")
+
+(defvar with-emacs-eoe-indicator "2CC60357-22B3-46BF-A7BB-42A521C6E330"
+  "String to indicate that evaluation has completed.")
+
 (defvar with-emacs-sit-for-seconds 0.1
   "Comint buffer/process polling interval.")
 
@@ -180,7 +186,11 @@ returned list are in the same order as in TREE.
   `(,path
     "--batch"
     "--eval" ,(format "(setq lexical-binding %s)" lexical)
-    "--eval" ,(format "%s" '(while t (prin1 (eval (read) lexical-binding))))))
+    "--eval" ,(format "(setq comint-prompt %S)" with-emacs-comint-prompt)
+    "--eval" ,(format "%S" '(while t
+                             (prin1
+                              (eval (read (read-from-minibuffer comint-prompt))
+                                    lexical-binding))))))
 
 (defun with-emacs--eval-expr-send-input (proc form eoe-indicator)
   ;; Clean buffer
@@ -250,7 +260,7 @@ returned list are in the same order as in TREE.
 
 (defun with-emacs--handle-output (output error)
   (if error
-      (signal 'error (list error))
+      (signal 'error (last (split-string error comint-prompt-regexp)))
     (when output
       (let* ((strs (split-string output comint-prompt-regexp))
              (ret (car (cddr (reverse strs)))))
@@ -282,15 +292,16 @@ If LEXICAL not set, use `with-emacs-lexical-binding.'"
                   (if has-path? path with-emacs-executable-path)
                   (if has-lexical? lexical with-emacs-lexical-binding))))
     `(let* ((process-connection-type nil)
-            (eoe-indicator "with-emacs-eoe")
-            (comint-prompt-regexp "Lisp expression: ")
+            (eoe-indicator with-emacs-eoe-indicator)
+            (comint-prompt-regexp with-emacs-comint-prompt)
             (cmdlist ',cmdlist)
             (pbuf ,(current-buffer))
             (output nil)
             (comint-output-filter-functions
-             (lambda (text)
-               ;; (message "==> text: %s" text)
-               (setq output (concat output text))))
+             (cons (lambda (text)
+                     ;; (message "==> text: %S" text)
+                     (setq output (concat output text)))
+                   comint-output-filter-functions))
             (buf (apply 'make-comint-in-buffer "with-emacs"
                         (generate-new-buffer-name "*with-emacs*")
                         (car cmdlist) nil (cdr cmdlist))))
