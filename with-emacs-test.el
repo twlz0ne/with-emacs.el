@@ -195,6 +195,15 @@
 (ert-deftest with-emacs-test-control-characters ()
   (should (string= "\r\n" (with-emacs "\r\n"))))
 
+(ert-deftest with-emacs-test-debug-on-error ()
+  (should
+   (string-prefix-p "Debugger entered--Lisp error:"
+                    (condition-case err
+                        (with-emacs
+                          (toggle-debug-on-error)
+                          (error "test debug on error"))
+                      (error (cadr err))))))
+
 (provide 'with-emacs-test)
 
 ;;; with-emacs-test.el ends here

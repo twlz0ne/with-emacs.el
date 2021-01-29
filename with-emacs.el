@@ -238,7 +238,7 @@ returned list are in the same order as in TREE.
       (goto-char comint-last-output-start)
       (save-restriction
         (narrow-to-region comint-last-output-start
-                          (goto-char (next-property-change (point))))
+                          (goto-char (or (next-property-change (point)) (point))))
         (buffer-substring-no-properties (point-min) (point-max))))))
 
 (defun with-emacs--eval-expr (buf form eoe-indicator)
@@ -260,7 +260,16 @@ returned list are in the same order as in TREE.
 
 (defun with-emacs--handle-output (output error)
   (if error
-      (signal 'error (last (split-string error comint-prompt-regexp)))
+      (signal 'error
+              (if debug-on-error
+                  (list
+                   (with-temp-buffer
+                     (insert error)
+                     (goto-char (point-min))
+                     (if (re-search-forward "^Debugger entered--Lisp error:" nil t)
+                         (buffer-substring (match-beginning 0) (point-max))
+                       error)))
+                (last (split-string error comint-prompt-regexp))))
     (when output
       (let* ((strs (split-string output comint-prompt-regexp))
              (ret (car (cddr (reverse strs)))))
