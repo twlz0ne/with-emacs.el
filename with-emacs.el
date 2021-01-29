@@ -4,7 +4,7 @@
 
 ;; Author: Gong Qijian <gongqijian@gmail.com>
 ;; Created: 2019/04/20
-;; Version: 0.4.1
+;; Version: 0.4.2
 ;; Package-Requires: ((emacs "24.4"))
 ;; URL: https://github.com/twlz0ne/with-emacs.el
 ;; Keywords: tools
@@ -63,6 +63,10 @@
 
 ;;; Change Log:
 
+;; 0.4.2 2021/01/29
+;;   Fix output handling when `debug-on-error' toggled
+;;   Fix error message in `with-emacs--handle-output'
+;;   Add variable `with-emacs-server-ensure'
 ;;
 ;; 0.4.1  2020/02/05
 ;;   Add timeout timer for `with-emacs-server'.
