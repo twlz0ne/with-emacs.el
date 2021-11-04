@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.com/twlz0ne/with-emacs.el.svg?branch=master)](https://travis-ci.com/twlz0ne/with-emacs.el)
+[![CI](https://github.com/twlz0ne/with-emacs.el/workflows/CI/badge.svg)](https://github.com/twlz0ne/with-emacs.el/actions?query=workflow%3ACI)
 [![MELPA](https://melpa.org/packages/with-emacs-badge.svg)](https://melpa.org/#/with-emacs)
 
 # with-emacs.el
