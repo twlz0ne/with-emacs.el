@@ -129,17 +129,23 @@
                    (funcall (fun-fun #'1+) 3)))))
 
 (ert-deftest with-emacs-test-lexical-nil ()
-  (should (equal "Symbol’s value as variable is void: f\n"
-                 (condition-case err
-                     (with-emacs
-                       :lexical nil
-                       (defun fun-fun (f)
-                         (lambda (x) (funcall f x)))
-                       (funcall (fun-fun #'1+) 3))
-                   (error (replace-regexp-in-string "'" "’" (cadr err)))))))
+  (let ((error-string
+         (condition-case err
+             (with-emacs
+               :lexical nil
+               (progn
+                 (defun fun-fun (f)
+                   (lambda (x) (funcall f x)))
+                 (funcall (fun-fun #'1+) 3)))
+           (error (replace-regexp-in-string "'" "’" (cadr err))))))
+    (should (or (string-prefix-p "Symbol’s value as variable is void: f\n"
+                                 error-string)
+                ;; 28.1
+                (string-prefix-p "Debugger entered--Lisp error: (void-variable f)\n"
+                                 error-string))))
 
-(defun greet (name)
-  (message "Hello, %s" name))
+  (defun greet (name)
+    (message "Hello, %s" name)))
 
 (ert-deftest with-emacs-test-scope-isolate ()
  (should

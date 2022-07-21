@@ -64,9 +64,9 @@
 ;;; Change Log:
 
 ;; 0.4.2 2021/01/29
-;;   Fix output handling when `debug-on-error' toggled
-;;   Fix error message in `with-emacs--handle-output'
-;;   Add variable `with-emacs-server-ensure'
+;;   Fix output handling when `debug-on-error' toggled.
+;;   Fix error message in `with-emacs--handle-output'.
+;;   Add variable `with-emacs-server-ensure'.
 ;;
 ;; 0.4.1  2020/02/05
 ;;   Add timeout timer for `with-emacs-server'.
@@ -79,7 +79,7 @@
 ;;
 ;; 0.2.1  2019/08/19
 ;;
-;;   Refactor the macro with-emacs
+;;   Refactor the macro with-emacs.
 ;;
 ;; 0.2.0  2019/06/05
 ;;
@@ -209,6 +209,7 @@ returned list are in the same order as in TREE.
     (unwind-protect
         (mapc (lambda (it)
                 (insert (format "%S" it))
+                ;; (message "==> [DEBUG] send: %S" it)
                 (comint-send-input))
               form)
       (when advice (advice-remove comint-input-sender advice))))
@@ -238,12 +239,21 @@ returned list are in the same order as in TREE.
 
 (defun with-emacs--eval-expr-error-message (proc)
   (when (< 0 (process-exit-status proc))
-    (save-excursion
-      (goto-char comint-last-output-start)
-      (save-restriction
-        (narrow-to-region comint-last-output-start
-                          (goto-char (or (next-property-change (point)) (point))))
-        (buffer-substring-no-properties (point-min) (point-max))))))
+    ;; (message "==> [DEBUG] comint-last-output-start: %s, current-point: %s" comint-last-output-start (point))
+    ;; (message "==> [DEBUG] buffer begin >>>>>>>>>>")
+    ;; (print (buffer-string))
+    ;; (message "==> [DEBUG] buffer end <<<<<<<<<<<<")
+    (buffer-substring-no-properties
+     (or (save-excursion
+           (goto-char comint-last-output-start)
+           (when (re-search-backward comint-prompt-regexp nil t)
+             (match-end 0)))
+         comint-last-output-start)
+     (save-excursion
+       (goto-char (point-max))
+       (re-search-backward
+        "\\(?:\nProcess .* exited abnormally with code [0-9]+\n\\)\\=" nil t)
+       (point)))))
 
 (defun with-emacs--eval-expr (buf form eoe-indicator)
   (let ((proc (get-buffer-process buf)))
@@ -257,12 +267,15 @@ returned list are in the same order as in TREE.
 (defun with-emacs--extract-return-value (s)
   "Extract return value from string S."
   (with-temp-buffer
+    ;; (message "[DEBUG] return: %S" s)
     (insert s)
     (emacs-lisp-mode)
     (goto-char (point-max))
     (sexp-at-point)))
 
 (defun with-emacs--handle-output (output error)
+  ;; (message "[DEBUG] error: %S" error)
+  ;; (message "[DEBUG] output: %S" output)
   (if error
       (signal 'error
               (if debug-on-error
@@ -277,19 +290,22 @@ returned list are in the same order as in TREE.
     (when output
       (let* ((strs (split-string output comint-prompt-regexp))
              (ret (car (cddr (reverse strs)))))
+        ;; (message "[DEBUG] strs: %S" strs)
         ;; Redirect message to `*Messages*'
         (mapc (lambda (s)
-                ;; (message "s: [%S]" s) ;; debug
+                ;; (message "[DEBUG] s: %S" s)
                 (when (string-match with-emacs-output-regexp s)
+                  ;; (message "[DEBUG] m: %S" (match-string 1 s))
+                  ;; (message (match-string 1 s))
                   (with-current-buffer (get-buffer "*Messages*")
                     (let ((inhibit-read-only t)
                           (msg (match-string 1 s)))
                       (goto-char (point-max))
                       (insert "\n")
-                      (insert msg)
-                      msg))))
+                      (insert msg)))))
               strs)
         ;; Return the result of the last expression as a string
+        ;; (message "[DEBUG] ret: %S" ret)
         (with-emacs--extract-return-value ret)))))
 
 (cl-defmacro with-emacs (&rest body
@@ -307,6 +323,7 @@ If LEXICAL not set, use `with-emacs-lexical-binding.'"
     `(let* ((process-connection-type nil)
             (eoe-indicator with-emacs-eoe-indicator)
             (comint-prompt-regexp with-emacs-comint-prompt)
+            (comint-prompt-read-only t)
             (cmdlist ',cmdlist)
             (pbuf ,(current-buffer))
             (output nil)
@@ -319,6 +336,7 @@ If LEXICAL not set, use `with-emacs-lexical-binding.'"
                         (generate-new-buffer-name "*with-emacs*")
                         (car cmdlist) nil (cdr cmdlist))))
        (let ((error (with-emacs--eval-expr buf ',body eoe-indicator)))
+         ;; (message "==> error: %s" error)
          (with-emacs--handle-output output error)))))
 
 (cl-defmacro with-emacs-server (server
