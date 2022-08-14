@@ -15,7 +15,12 @@ Clone this repository, or install from MELPA. Add the following to your `.emacs`
 
 ## Usage
 
-### with-emacs
+### with-emacs `(&key PATH LEXICAL &rest BODY)`
+
+Start a emacs in a subprocess, and execute BODY there.
+
+If PATH not set, use `with-emacs-executable-path'.\
+If LEXICAL not set, use `with-emacs-lexical-binding.'
 
 ```elisp
 ;; Evaluate expressions in a separate Emacs.
@@ -23,15 +28,18 @@ Clone this repository, or install from MELPA. Add the following to your `.emacs`
 
 ;; Specify the version of Emacs and enable lexical binding.
 (with-emacs :path "/path/to/{version}/emacs" :lexical t ...)
-
-;; Use partially applied function (see `with-emacs-define-partially-applied` for more)
-;; instead of writting verry long parameter each time:
-(with-emacs-nightly-t ...)
-;; Equivalent to:
-;; (with-emacs :path "/path/to/nightly/emacs" :lexical t ...)
 ```
 
-### with-emacs-server
+### with-emacs-server `(SERVER &key ENSURE TIMEOUT &rest BODY)`
+
+Contact the Emacs server named SERVER and evaluate BODY there.
+
+If ENSURE not nil, start a server when necessary. It can be t or
+a path of emacs, if it is t, use `with-emacs-executable-path' as default.
+
+The server will be killed after TIMEOUT minutes, if TIMEOUT not given,
+use `with-emacs-server-timeout` as default, if TIMEOUT is nil,
+disable timeout timer.
 
 ```elisp
 ;; Evaluate expressions in server "name" or signal an error if no such server. 
@@ -43,11 +51,48 @@ Clone this repository, or install from MELPA. Add the following to your `.emacs`
 
 ;; Kill server after 100 minutes of idle
 (with-emacs-server "name" :ensure t :timeout 100 ...)
+
 ;; Set default timeout for every new server:
 (setq with-emacs-server-timeout 100)
 (with-emacs-server "name" :ensure t ...)
+
 ;; Disable default timeout temporary:
 (with-emacs-server "name" :ensure t :timeout nil ...)
+```
+
+### with-emacs-define-partially-applied `(&rest ARGS)`
+
+Generate functions that are partial application of `with-emacs` to ARGS.
+
+The form of ARGS is:
+
+    (part-name1 emacs-path1 lexical-or-not)
+    (part-name2 emacs-path2 lexical-or-not)
+    ...
+
+For example:
+
+```elisp
+(with-emacs-define-partially-applied
+ (t      nil t)
+ (24.3   "/path/to/emacs-24.3")
+ (24.4-t "/path/to/emacs-24.4" t))
+```
+
+Will creates following new functions:
+
+```elisp
+(with-emacs-t &key PATH &rest BODY)
+;; Equivalent to:
+;; (with-emacs :lexical t ...)
+
+(with-emacs-24.3 &key LEXICAL &rest BODY)
+;; Equivalent to:
+;; (with-emacs :path "/path/to/emacs-24.3" ...)
+
+(with-emacs-24.4-t &rest BODY)
+;; Equivalent to:
+;; (with-emacs :lexical t :path "/path/to/emacs-24.4" ...)
 ```
 
 ## Examples
